@@ -8,19 +8,19 @@ import constant
 def validate(csp):
     """
     Main function to parse and validate the given Content
-    Security Policy. 
+    Security Policy.
 
     Parameters
     ----------
     csp : str
         The content security policy of interest.
-    
+
     Returns
     -------
     result : dict
         A dictionary with two keys ("valid", "errors"). The
         structure of the dictionary is documented as follows:
-        
+
         {
             valid: True/False,
             errors: [
@@ -36,7 +36,7 @@ def validate(csp):
     result = {
         "errors": []
     }
-    
+
     directives = parse_policy(csp)
     for directive in directives:
         valid, reason = validate_directive(directive)
@@ -45,7 +45,10 @@ def validate(csp):
                 "directive_name": directive,
                 "reason": reason
             })
-        valid, reason = parse_source_list(directives[directive])
+        if directive == 'report-uri':
+            valid, reason = parse_report_uri(directives[directive])
+        else:
+            valid, reason = parse_source_list(directives[directive])
         if not valid:
             result["errors"].append({
                 "directive_name": directive,
@@ -62,7 +65,7 @@ def parse_policy(csp):
     """
     Return a dictionary of directives with a list
     of directive values for each directive
-    discovered. 
+    discovered.
 
     Parameters
     ----------
@@ -76,7 +79,7 @@ def parse_policy(csp):
         of directive values.
 
     """
-    
+
     r1 = re.compile(';\s*')
     r2 = re.compile('\s+')
 
@@ -84,7 +87,7 @@ def parse_policy(csp):
     dir_split_list = r1.split(csp)
     # the last item could be empty if ; is present
     dir_split_list = filter(None, dir_split_list)
-    
+
     # split by space so directive name is first element
     # follows by a list of source expressions
     directives = {}
@@ -97,9 +100,9 @@ def parse_policy(csp):
 def validate_directive(directive):
     """
 
-    Determine whether the given directive is one of the 
+    Determine whether the given directive is one of the
     documented directive in the Content Security
-    Policy 1.0 specification. 
+    Policy 1.0 specification.
 
     Deprecated directives are also check and a different
     error is returned for deprecated directive.
@@ -108,7 +111,7 @@ def validate_directive(directive):
     ----------
     directive : str
         The name of the directive
-    
+
     Returns
     -------
     is_valid : bool
@@ -149,10 +152,10 @@ def parse_source_list(source_list):
         If the directive is valid, return an empty reason. If
         the source list contains invalid entity, return
         an error message.
- 
+
     """
 
-    # when 'none' is applied no other source expressions are 
+    # when 'none' is applied no other source expressions are
     # allowed (UA is supposed to fail such rule).
     if "'none'" in source_list:
         if len(source_list) > 1:
@@ -164,7 +167,24 @@ def parse_source_list(source_list):
     valid, reason = match_source_expressions(source_list)
     return valid, reason
 
+def parse_report_uri(report_uri):
+
+    """
+    Parse the given report-uri and return ``True`` if it is
+    valid. Otherwise return ``False``.
+    """
+
+    if len(report_uri) != 1:
+        return False, "Only takes one uri can be present."
+
+    if match(report_uri[0], constant.REPORT_URI):
+        return True, ""
+    else:
+        return False, "Invalid report-uri"
+
+
 def match_source_expressions(source_list):
+
     """
     Determine whether the source list matches source expressions.
     Iterate each source list element (uri) to a source expression
@@ -174,7 +194,7 @@ def match_source_expressions(source_list):
     ----------
     source_list : list
         A list of directive values.
-    
+
     Returns
     -------
     matched : bool
@@ -185,7 +205,7 @@ def match_source_expressions(source_list):
 
     """
 
-    # wildcard has superpower 
+    # wildcard has superpower
     if source_list and source_list[0] == "*":
         return True, ""
 
@@ -207,7 +227,7 @@ def match(uri, regex):
     of regex. If a match is found and match matches
     the full uri string, return True. Otherwise, return
     False.
-    
+
     Parameters
     ----------
     uri : str
@@ -224,4 +244,3 @@ def match(uri, regex):
         return True
     else:
         return False
-

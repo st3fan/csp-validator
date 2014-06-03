@@ -18,7 +18,7 @@ class TestParsePolicy(unittest.TestCase):
         d = csp.parse_policy(policy)
         self.assertEqual(['default-src'], d.keys())
         self.assertEqual(["'self'"], d['default-src'])
-    
+
     def test_policy_with_two_directives(self):
         policy = "default-src 'self' google.com; img-src *;"
         d = csp.parse_policy(policy)
@@ -50,7 +50,7 @@ class TestValidateDirective(unittest.TestCase):
 
     def test_unknown_src_not_in_directive(self):
         self._test("unknown_src", False, deprecated=False)
-    
+
     def test_allow_deprecated_directive(self):
         self._test("allow", False, deprecated=True)
 
@@ -85,7 +85,7 @@ class TestParseSourceList(unittest.TestCase):
 
 
 class TestMatchSourceExpressions(unittest.TestCase):
-    
+
     def _test(self, slist, valid, error):
         is_valid, reason = csp.match_source_expressions(slist)
         self.assertEqual(is_valid, valid)
@@ -127,7 +127,7 @@ class TestValidate(unittest.TestCase):
             for index, error in enumerate(errors):
                 if error["directive_name"] == directive:
                     self.assertEqual(True, error_contain in error["reason"])
-                
+
     def _assert_source_errors(self, errors, directives, error_contain):
         self.assertTrue(len(directives) == len(errors) and len(directives) > 0)
         for index, directive in enumerate(directives):
@@ -172,6 +172,13 @@ class TestValidate(unittest.TestCase):
         self._assert(policy, valid=False, fail_by_directive=True, \
             directives=["script-src"], error_contain="deprecated keyword source")
 
+    def test_policy_contains_reporting_url(self):
+        for scheme in ('http', 'https'):
+            for host in ('foo.com', 'www.foo.com', 'www.foo.bar.com'):
+                for port in ('', ':1234'):
+                    for path in ('', '/', '/foo', '/foo/bar'):
+                        policy = "default-src 'self'; report-uri " + scheme + "://" + host + port + path + ";"
+                        self._assert(policy, valid=True)
 
 if __name__ == "__main__":
     unittest.main()
