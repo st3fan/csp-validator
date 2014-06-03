@@ -8,4 +8,5 @@ setup(name="csp_validator",
     version="0.0",
     description="Content Security Policy validator in Python",
     packages=['csp_validator'],
+    test_suite="tests",
 )
